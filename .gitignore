@@ -1,0 +1,34 @@
+# Python
+
+**pycache**/
+*.pyc
+
+# Virtual environment
+
+venv/
+.venv/
+
+# Environment variables
+.vscode/
+.env
+
+# Models (local STT / TTS / LLM files)
+
+models/
+
+# Audio files
+
+*.wav
+
+# Logs / temp
+
+*.log
+temp/
+
+# Streamlit secrets
+
+.streamlit/secrets.toml
+
+# macOS
+
+.DS_Store
