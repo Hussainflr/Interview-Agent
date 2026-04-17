@@ -1,81 +1,149 @@
 #!/bin/bash
 
-echo "🚀 Setting up Interview Agent Environment..."
+echo "🚀 Setting up AI Interview Agent (FastAPI + React)..."
 
 # -------------------------
 
-# 1. Create Conda Env
+# 1. Create Conda Environment
 
 # -------------------------
 
 echo "📦 Creating conda environment..."
 conda create -n interview-agent python=3.10 -y
+
+# Activate (works in most shells)
+
+source $(conda info --base)/etc/profile.d/conda.sh
 conda activate interview-agent
 
 # -------------------------
 
-# 2. Core Dependencies (Conda)
+# 2. Install Backend Dependencies
 
 # -------------------------
 
-echo "🔧 Installing core dependencies..."
-conda install -c conda-forge pip setuptools wheel ffmpeg libsndfile -y
+echo "🐍 Installing Python dependencies..."
 
-# -------------------------
+pip install --upgrade pip
 
-# 3. Python Packages
-
-# -------------------------
-
-echo "🐍 Installing Python packages..."
-python -m pip install --upgrade pip
-
-python -m pip install 
-numpy
-streamlit 
+pip install 
+fastapi 
+uvicorn 
 crewai 
+litellm 
+"langchain==0.1.16" 
+"langchain-core==0.1.52" 
 faster-whisper 
-av 
 soundfile 
-pydub 
-requests 
-pyyaml 
-silero-vad
+numpy
 
 # -------------------------
 
-# 4. Install Piper (Mac)
+# 3. Setup Environment Variables
 
 # -------------------------
 
-echo "🔊 Installing Piper TTS..."
-if command -v brew &> /dev/null
+echo "⚙️ Setting environment variables..."
+
+export OPENAI_API_KEY=dummy
+export OLLAMA_BASE_URL=http://localhost:11434
+
+# Save to .env (optional)
+
+cat <<EOF > .env
+OPENAI_API_KEY=dummy
+OLLAMA_BASE_URL=http://localhost:11434
+EOF
+
+# -------------------------
+
+# 4. Install Node + Frontend
+
+# -------------------------
+
+echo "⚛️ Setting up React frontend..."
+
+if ! command -v node &> /dev/null
 then
-brew install piper
+echo "❌ Node.js not found. Please install Node.js first."
 else
-echo "⚠️ Homebrew not found. Please install Piper manually."
+cd frontend
+npm install
+cd ..
 fi
 
 # -------------------------
 
-# 5. Download TTS Model
+# 5. Install Piper (Mac)
 
 # -------------------------
 
-echo "📥 Downloading Piper voice model..."
+echo "🔊 Installing Piper..."
+
+if command -v brew &> /dev/null
+then
+brew install piper
+else
+echo "⚠️ Homebrew not found. Install Piper manually."
+fi
+
+# -------------------------
+
+# 6. Create Required Folders
+
+# -------------------------
+
+echo "📁 Creating project folders..."
+
 mkdir -p models/piper
+mkdir -p outputs
 
-curl -L -o models/piper/en_US-lessac-medium.onnx 
+# -------------------------
+
+# 7. Download Piper Model (if missing)
+
+# -------------------------
+
+MODEL_PATH="models/piper/en_US-lessac-medium.onnx"
+
+if [ ! -f "$MODEL_PATH" ]; then
+echo "⬇️ Downloading Piper model..."
+curl -L -o $MODEL_PATH 
 https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+else
+echo "✅ Piper model already exists"
+fi
 
 # -------------------------
 
-# 6. Ollama Model
+# 8. Setup Ollama Model
 
 # -------------------------
 
-echo "🤖 Pulling Ollama model..."
+echo "🤖 Checking Ollama..."
+
+if command -v ollama &> /dev/null
+then
 ollama pull mistral
+else
+echo "⚠️ Ollama not installed. Install from https://ollama.com"
+fi
 
-echo "✅ Setup complete!"
-echo "👉 Run: streamlit run app/main.py"
+# -------------------------
+
+# 9. Done
+
+# -------------------------
+
+echo ""
+echo "✅ Setup Complete!"
+echo ""
+echo "👉 Run backend:"
+echo "   uvicorn backend.main:app --reload"
+echo ""
+echo "👉 Run frontend:"
+echo "   cd frontend && npm run dev"
+echo ""
+echo "👉 Make sure Ollama is running:"
+echo "   ollama run mistral"
+echo ""
