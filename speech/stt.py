@@ -1,7 +1,7 @@
 from faster_whisper import WhisperModel
 import yaml
 
-with open("config/settings.yaml") as f:
+with open("configs/settings.yaml") as f:
     config = yaml.safe_load(f)
 
 MODEL_SIZE = config["stt"]["model"]

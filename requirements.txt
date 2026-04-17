@@ -1,5 +1,10 @@
 streamlit
 crewai
+faster-whisper
+av
+webrtcvad
+soundfile
+pydub
 requests
 pyyaml
-faster-whisper
+streamlit_webrtc

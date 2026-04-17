@@ -1,11 +1,11 @@
 from crewai import Crew, Task
 from agents.interviewer import create_interviewer
 from agents.evaluator import create_evaluator
-from llm.ollama_client import generate
+from llm.ollama_client import generate_streaming_response
 
 class LLMWrapper:
     def call(self, prompt):
-        return generate(prompt)
+        return generate_streaming_response(prompt)
 
 def build_crew():
     llm = LLMWrapper()
