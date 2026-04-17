@@ -1,6 +1,9 @@
 # 🎤 Real-Time AI Interview Agent (Local, Voice-Based)
 
-🚀 A ChatGPT-like voice assistant for technical interviews — running 100% locally with multi-agent intelligence.
+
+# 🎤 Real-Time AI Interview Agent (Local, Voice-Based)
+
+🚀 A ChatGPT-like voice assistant for technical interviews — running 100% locally with multi-agent intelligence built with:
 
 * 🧠 Multi-agent orchestration (CrewAI)
 * 🎙️ Speech-to-Text (faster-whisper)
@@ -18,6 +21,24 @@
 * ⛔ **Interrupt support** (user can cut AI mid-response)
 * 🤫 **Silence detection (VAD)** using Silero
 * 🔒 **Fully local (no API required)**
+
+---
+
+## ⚡ Quick Start (Recommended)
+
+```bash
+git clone <your-repo-url>
+cd interview-agent
+
+chmod +x setup.sh
+./setup.sh
+```
+
+👉 Then run:
+
+```bash
+streamlit run app/main.py
+```
 
 ---
 
@@ -70,13 +91,16 @@ interview-agent/
 ├── models/
 │   └── piper/              # local TTS models (ignored in git)
 │
+├── setup.sh                # 🔥 one-command setup
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## ⚙️ Setup (Conda - Recommended for M1)
+## ⚙️ Manual Setup (Optional)
+
+If you prefer step-by-step:
 
 ### 1. Create environment
 
@@ -87,20 +111,15 @@ conda activate interview-agent
 
 ---
 
-### 2. Install core dependencies
+### 2. Install dependencies
 
 ```bash
-conda install -c conda-forge pip setuptools wheel -y
-conda install -c conda-forge ffmpeg libsndfile -y
+conda install -c conda-forge pip setuptools wheel ffmpeg libsndfile -y
 ```
-
----
-
-### 3. Install Python packages
 
 ```bash
 python -m pip install \
-numpy\
+numpy==1.26.4 \
 streamlit \
 crewai \
 faster-whisper \
@@ -114,7 +133,7 @@ silero-vad
 
 ---
 
-### 4. Install Piper (TTS)
+### 3. Install Piper (TTS)
 
 ```bash
 brew install piper
@@ -132,22 +151,12 @@ https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/
 
 ---
 
-### 5. Setup Ollama
-
-Install and pull model:
+### 4. Setup Ollama
 
 ```bash
 ollama pull mistral
 # OR
 ollama pull llama3:8b
-```
-
----
-
-## ▶️ Run Application
-
-```bash
-streamlit run app/main.py
 ```
 
 ---
@@ -225,11 +234,4 @@ MIT License
 
 ---
 
-## ⭐ Acknowledgements
-
-* CrewAI for agent orchestration
-* Ollama for local LLM serving
-* Silero for VAD
-* Open-source speech community
-
----
+## ⭐ If you found this useful, consider starring the repo!
