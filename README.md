@@ -1,230 +1,210 @@
-# 🎤 Real-Time AI Interview Agent (Local, Voice-Based)
+# 🎤 Real-Time AI Interview Agent (FastAPI + React + Local LLM)
 
-
-# 🎤 Real-Time AI Interview Agent (Local, Voice-Based)
-
-🚀 A ChatGPT-like voice assistant for technical interviews — running 100% locally with multi-agent intelligence built with:
-
-* 🧠 Multi-agent orchestration (CrewAI)
-* 🎙️ Speech-to-Text (faster-whisper)
-* 🔊 Text-to-Speech (Piper)
-* 🤖 Local LLM (Ollama - Mistral / Llama3)
-* 🌐 Streamlit UI with live microphone interaction
+> 🚀 A fully local, real-time **voice-based interview assistant** with streaming audio, multi-agent reasoning, and no cloud APIs.
 
 ---
 
-## 🚀 Features
+## 🔥 Demo Overview
 
-* 🎤 **Real-time voice interaction**
-* 🧠 **Multi-agent interview flow** (Interviewer + Evaluator)
-* 🔄 **Streaming-like responses**
-* ⛔ **Interrupt support** (user can cut AI mid-response)
-* 🤫 **Silence detection (VAD)** using Silero
-* 🔒 **Fully local (no API required)**
+```text
+🎤 Speak → AI listens → transcribes → evaluates → responds → speaks back
+```
+
+* Real-time microphone streaming (PCM)
+* WebSocket-based communication
+* AI-driven interview flow
+* Fully offline (Ollama + local models)
 
 ---
 
-## ⚡ Quick Start (Recommended)
+## 🧠 Architecture
 
-```bash
-git clone <your-repo-url>
-cd interview-agent
-
-chmod +x setup.sh
-./setup.sh
-```
-
-👉 Then run:
-
-```bash
-streamlit run app/main.py
-```
-
----
-
-## 🧠 System Architecture
-
-```
-Mic Input
-   ↓
-VAD (Silero)
+```text
+React (Mic - PCM stream)
+   ↓ WebSocket
+FastAPI Backend
    ↓
 STT (faster-whisper)
    ↓
-CrewAI Agents
+CrewAI Agents (LiteLLM)
    ↓
-LLM (Ollama)
+Ollama (Mistral / Llama3)
    ↓
 TTS (Piper)
    ↓
-Audio Output + UI
+Audio response → Browser
 ```
+
+---
+
+## ⚡ Tech Stack
+
+| Layer    | Technology                    |
+| -------- | ----------------------------- |
+| Frontend | React (Vite)                  |
+| Backend  | FastAPI + WebSockets          |
+| Agents   | CrewAI                        |
+| LLM      | Ollama (local) via LiteLLM    |
+| STT      | faster-whisper                |
+| TTS      | Piper                         |
+| Audio    | Web Audio API (PCM streaming) |
 
 ---
 
 ## 📁 Project Structure
 
-```
+```bash
 interview-agent/
+├── backend/
+│   ├── main.py
+│   ├── websocket.py
+│   ├── pipeline.py
+│   └── __init__.py
 │
-├── app/
-│   └── main.py              # Streamlit UI
+├── frontend/              # React app
+│   ├── src/
+│   └── package.json
 │
 ├── agents/
-│   ├── crew.py
-│   ├── interviewer.py
-│   └── evaluator.py
-│
-├── llm/
-│   └── ollama_client.py
+│   └── crew.py
 │
 ├── speech/
-│   ├── stt.py              # faster-whisper
-│   └── tts.py              # Piper
-│
-├── utils/
-│   └── vad.py              # Silero VAD
-│
-├── config/
-│   └── settings.yaml
+│   ├── stt.py
+│   └── tts.py
 │
 ├── models/
-│   └── piper/              # local TTS models (ignored in git)
+│   └── piper/
 │
-├── setup.sh                # 🔥 one-command setup
-├── requirements.txt
+├── outputs/
 └── README.md
 ```
 
 ---
 
-## ⚙️ Manual Setup (Optional)
+## 🚀 Setup Instructions
 
-If you prefer step-by-step:
+### 🧩 1. Prerequisites
 
-### 1. Create environment
+Install:
+
+* Node.js (for frontend)
+* Ollama
+* Piper
+
+---
+
+### 🤖 2. Setup Ollama
+
+```bash
+ollama pull mistral
+ollama run mistral
+```
+
+---
+
+### 🐍 3. Backend Setup (Python)
 
 ```bash
 conda create -n interview-agent python=3.10 -y
 conda activate interview-agent
 ```
 
----
-
-### 2. Install dependencies
+Install dependencies:
 
 ```bash
-conda install -c conda-forge pip setuptools wheel ffmpeg libsndfile -y
+pip install fastapi uvicorn crewai litellm \
+faster-whisper soundfile numpy
 ```
 
+Set environment variables:
+
 ```bash
-python -m pip install \
-numpy==1.26.4 \
-streamlit \
-crewai \
-faster-whisper \
-av \
-soundfile \
-pydub \
-requests \
-pyyaml \
-silero-vad
+export OPENAI_API_KEY=dummy
+export OLLAMA_BASE_URL=http://localhost:11434
 ```
 
----
-
-### 3. Install Piper (TTS)
+Run backend:
 
 ```bash
-brew install piper
-```
-
-Download voice model:
-
-```bash
-mkdir -p models/piper
-cd models/piper
-
-curl -L -o en_US-lessac-medium.onnx \
-https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx
+uvicorn backend.main:app --reload
 ```
 
 ---
 
-### 4. Setup Ollama
+### ⚛️ 4. Frontend Setup (React)
 
 ```bash
-ollama pull mistral
-# OR
-ollama pull llama3:8b
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:5173
 ```
 
 ---
 
 ## 🎮 Usage
 
-1. Click **▶️ Start Interview**
-2. Speak naturally into your microphone
-3. AI listens, processes, and responds
-4. AI asks follow-up questions
-5. Click **⛔ Stop Interview** to end
+1. Click **Start**
+2. Allow microphone access
+3. Speak naturally
+4. AI:
+
+   * transcribes your speech
+   * evaluates your answer
+   * asks follow-up questions
+   * responds with voice
 
 ---
 
-## 🧠 Agents
+## 🔊 Audio Pipeline
 
-* **Interviewer Agent**
-
-  * Asks structured technical/behavioral questions
-
-* **Evaluator Agent**
-
-  * Evaluates responses and provides feedback
+* 🎤 Input: PCM streaming (Web Audio API)
+* 🧠 STT: faster-whisper
+* 🤖 LLM: Ollama (local)
+* 🔊 Output: Piper TTS
 
 ---
 
-## ⚡ Tech Stack
+## ⚠️ Important Notes
 
-| Component | Tool                      |
-| --------- | ------------------------- |
-| UI        | Streamlit                 |
-| LLM       | Ollama (Mistral / Llama3) |
-| STT       | faster-whisper            |
-| TTS       | Piper                     |
-| VAD       | Silero VAD                |
-| Agents    | CrewAI                    |
-
----
-
-## 🔥 Key Highlights
-
-* 💯 Fully local AI pipeline (privacy-friendly)
-* ⚡ Optimized for Apple Silicon (M1/M2)
-* 🧩 Modular architecture (easy to swap components)
-* 🎯 Real-time conversational UX
-
----
-
-## ⚠️ Notes
-
+* No WebM / ffmpeg required (pure PCM streaming)
 * Ensure microphone permissions are enabled
-* Use `mistral` for speed, `llama3:8b` for quality
-* Avoid large models (>8B) on M1 for real-time performance
+* Keep Ollama running during usage
+* First run may take time (model loading)
+
+---
+
+## 🔥 Key Features
+
+* ✅ Real-time audio streaming (WebSocket)
+* ✅ Fully local AI (privacy-first)
+* ✅ Multi-agent reasoning (CrewAI)
+* ✅ No OpenAI or external APIs
+* ✅ Modular & scalable architecture
 
 ---
 
 ## 🚀 Future Improvements
 
+* 🔴 Streaming LLM responses (token-by-token)
+* ⛔ Interrupt AI speech
+* 🎯 Voice Activity Detection (VAD)
 * 📊 Interview scoring dashboard
-* 🧠 Memory-aware conversation
-* 🔁 Streaming TTS (speak while generating)
-* 🎭 Multi-role interviewers (HR + Tech + System Design)
+* 💬 Chat-style UI (like ChatGPT)
 
 ---
 
-## 🤝 Contributing
+## 🧠 Key Learnings
 
-Contributions are welcome! Feel free to open issues or PRs.
+* Real-time audio ≠ file uploads
+* WebSockets are essential for streaming apps
+* PCM streaming avoids ffmpeg complexity
+* AI pipeline latency is the main UX challenge
 
 ---
 

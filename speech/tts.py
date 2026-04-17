@@ -1,38 +1,63 @@
+import os
 import subprocess
-import threading
+import uuid
+import urllib.request
 
-current_process = None
+# -------------------------
+# Paths
+# -------------------------
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-def speak(text):
-    global current_process
+MODEL_DIR = os.path.join(BASE_DIR, "models", "piper")
+MODEL_PATH = os.path.join(MODEL_DIR, "en_US-lessac-medium.onnx")
 
-    # Stop previous speech if interrupt triggered
-    if current_process:
-        current_process.kill()
+OUTPUT_DIR = os.path.join(BASE_DIR, "outputs")
 
-    command = f'echo "{text}" | piper --model models/piper/en_US-lessac-medium.onnx --output_file output.wav'
-    subprocess.run(command, shell=True)
-
-    current_process = subprocess.Popen("afplay output.wav", shell=True)
-
+MODEL_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
 
 
-# -----------------------
-# Session State Init (TOP OF FILE)
-# -----------------------
-import streamlit as st
-import queue
+# -------------------------
+# Ensure model exists
+# -------------------------
+def ensure_model():
+    os.makedirs(MODEL_DIR, exist_ok=True)
 
-def init_session_state():
-    defaults = {
-        "running": False,
-        "audio_queue": queue.Queue(),
-        "history": [],
-        "interrupt": False,
-    }
+    if not os.path.exists(MODEL_PATH):
+        print("⬇️ Downloading Piper model...")
+        urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
+        print("✅ Model downloaded")
 
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
 
-init_session_state()
+# -------------------------
+# Main TTS function
+# -------------------------
+def speak_to_file(text: str):
+    ensure_model()
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    filename = os.path.join(OUTPUT_DIR, f"output_{uuid.uuid4()}.wav")
+
+    process = subprocess.Popen(
+        [
+            "piper",
+            "--model",
+            MODEL_PATH,
+            "--output_file",
+            filename,
+        ],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+
+    process.communicate(text[:500])  # limit length for stability
+
+    # -------------------------
+    # Validate output
+    # -------------------------
+    if not os.path.exists(filename):
+        raise RuntimeError("❌ TTS failed: output file not created")
+
+    return filename
