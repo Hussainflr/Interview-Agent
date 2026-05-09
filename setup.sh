@@ -28,25 +28,24 @@ pip install --upgrade pip
 
 pip install 
 fastapi 
-uvicorn 
+uvicorn[standard] 
 crewai 
-litellm 
-"langchain==0.1.16" 
-"langchain-core==0.1.52" 
 faster-whisper 
 soundfile 
-numpy
+pyttsx3
+pyyaml
 
 # -------------------------
 
-# 3. Setup Environment Variables
+# 4. Install Node.js and Frontend Dependencies
 
 # -------------------------
 
-echo "⚙️ Setting environment variables..."
+echo "📦 Installing Node.js dependencies..."
 
-export OPENAI_API_KEY=dummy
-export OLLAMA_BASE_URL=http://localhost:11434
+cd frontend
+npm install
+cd ..
 
 # Save to .env (optional)
 

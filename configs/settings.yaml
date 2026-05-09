@@ -8,8 +8,8 @@ stt:
   device: cpu      # M1 uses CPU/Metal internally
 
 tts:
-  engine: piper
-  model_path: models/piper/en_US-lessac-medium.onnx
+  engine: pyttsx3
+  voice: default  # macOS will use system default voice
 
 app:
   temperature: 0.7

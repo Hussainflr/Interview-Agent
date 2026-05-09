@@ -19,15 +19,15 @@ async def interview_ws_handler(websocket: WebSocket):
             audio = np.frombuffer(chunk, dtype=np.int16).astype(np.float32) / 32768.0
             buffer.append(audio)
 
-            # Process every ~2 sec
-            if len(buffer) > 20:
+            # Process every ~1 sec for lower latency
+            if len(buffer) > 10:
                 full_audio = np.concatenate(buffer)
                 buffer = []
 
                 # Send to pipeline (NO FILE CONVERSION)
-                response_audio, response_text = process_audio_array(full_audio)
+                response_audio, response_text, user_text = process_audio_array(full_audio)
 
-                await websocket.send_json({"text": response_text})
+                await websocket.send_json({"text": response_text, "user_text": user_text})
                 await websocket.send_bytes(response_audio)
 
     except Exception as e:

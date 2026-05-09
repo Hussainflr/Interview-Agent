@@ -30,7 +30,7 @@ CrewAI Agents (LiteLLM)
    ↓
 Ollama (Mistral / Llama3)
    ↓
-TTS (Piper)
+TTS (pyttsx3)
    ↓
 Audio response → Browser
 ```
@@ -41,12 +41,12 @@ Audio response → Browser
 
 | Layer    | Technology                    |
 | -------- | ----------------------------- |
-| Frontend | React (Vite)                  |
+| Frontend | Next.js (React)               |
 | Backend  | FastAPI + WebSockets          |
 | Agents   | CrewAI                        |
-| LLM      | Ollama (local) via LiteLLM    |
+| LLM      | Ollama (local) via CrewAI     |
 | STT      | faster-whisper                |
-| TTS      | Piper                         |
+| TTS      | pyttsx3 (macOS native)      |
 | Audio    | Web Audio API (PCM streaming) |
 
 ---
@@ -61,12 +61,14 @@ interview-agent/
 │   ├── pipeline.py
 │   └── __init__.py
 │
-├── frontend/              # React app
-│   ├── src/
+├── frontend/              # Next.js app
+│   ├── app/
 │   └── package.json
 │
 ├── agents/
-│   └── crew.py
+│   ├── crew.py
+│   ├── interviewer.py
+│   └── evaluator.py
 │
 ├── speech/
 │   ├── stt.py
@@ -89,7 +91,7 @@ Install:
 
 * Node.js (for frontend)
 * Ollama
-* Piper
+* Python packages (automatically installed by setup.sh)
 
 ---
 
@@ -126,12 +128,12 @@ export OLLAMA_BASE_URL=http://localhost:11434
 Run backend:
 
 ```bash
-uvicorn backend.main:app --reload
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ---
 
-### ⚛️ 4. Frontend Setup (React)
+### ⚛️ 4. Frontend Setup (Next.js)
 
 ```bash
 cd frontend
@@ -142,7 +144,7 @@ npm run dev
 Open:
 
 ```text
-http://localhost:5173
+http://localhost:3000
 ```
 
 ---

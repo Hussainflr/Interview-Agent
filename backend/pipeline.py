@@ -24,7 +24,7 @@ def process_audio_array(audio_array):
     print("🧑 User:", text)
 
     if not text.strip():
-        return b"", "No speech detected"
+        return b"", "No speech detected", text
 
     # CrewAI
     result = crew.kickoff(inputs={"answer": text})
@@ -38,4 +38,4 @@ def process_audio_array(audio_array):
     with open(output_audio_path, "rb") as f:
         audio_bytes = f.read()
 
-    return audio_bytes, response_text
+    return audio_bytes, response_text, text

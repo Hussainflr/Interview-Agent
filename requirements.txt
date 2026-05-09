@@ -1,14 +1,7 @@
-streamlit
+fastapi
+uvicorn[standard]
 crewai
 faster-whisper
-av
-webrtcvad
 soundfile
-pydub
-requests
+pyttsx3
 pyyaml
-streamlit_webrtc
-crewai
-litellm
-langchain==0.1.16
-langchain-core==0.1.52
