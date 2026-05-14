@@ -1,7 +1,11 @@
 fastapi
 uvicorn[standard]
-crewai
+requests
+pydantic
+python-multipart
 faster-whisper
 soundfile
 pyttsx3
 pyyaml
+reportlab
+pytest

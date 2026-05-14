@@ -1,33 +1,20 @@
-import requests
-import yaml
-import streamlit as st
+from __future__ import annotations
 
-with open("configs/settings.yaml") as f:
-    config = yaml.safe_load(f)
+from backend.config import get_settings
+from llm.local_client import LocalLLMClient
 
-MODEL = config["llm"]["model"]
 
-def generate_streaming_response(prompt):
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": MODEL,
-            "prompt": prompt,
-            "stream": True
-        },
-        stream=True
+def generate_streaming_response(prompt: str) -> str:
+    """Backward-compatible helper for older imports.
+
+    The app now uses LocalLLMClient directly and supports both Ollama and
+    LM Studio. This wrapper remains so older code does not crash.
+    """
+
+    client = LocalLLMClient(get_settings())
+    return client.generate(
+        "You are a helpful local interview preparation assistant.",
+        prompt,
+        json_mode=False,
     )
 
-    full_text = ""
-
-    for line in response.iter_lines():
-        if line:
-            chunk = eval(line.decode("utf-8"))
-            token = chunk.get("response", "")
-            full_text += token
-
-            # Interrupt if user starts speaking
-            if st.session_state.get("interrupt"):
-                break
-
-    return full_text

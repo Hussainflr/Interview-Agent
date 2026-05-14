@@ -1,41 +1,41 @@
+from __future__ import annotations
+
 import tempfile
+
 import soundfile as sf
 
+from agents.interview_agent import InterviewAgent
+from backend.config import get_settings
 from speech.stt import transcribe
 from speech.tts import speak_to_file
-from agents.crew import build_crew
-
-crew = build_crew()  # create once
 
 
-def process_audio_array(audio_array):
-    """
-    audio_array: numpy float32 array
-    """
+def process_audio_array(audio_array, session_id: str | None = None):
+    """Transcribe local audio and route it through the interview agent."""
 
-    # Save as WAV (for whisper)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as f:
         sf.write(f.name, audio_array, 16000)
         wav_path = f.name
 
-    # STT
     text = transcribe(wav_path)
-
-    print("🧑 User:", text)
-
     if not text.strip():
-        return b"", "No speech detected", text
+        return b"", "No speech detected. You can also type your answer.", text, session_id
 
-    # CrewAI
-    result = crew.kickoff(inputs={"answer": text})
-    response_text = str(result)
+    agent = InterviewAgent(get_settings())
+    if not session_id:
+        session = agent.start_session({})
+        session_id = session["id"]
 
-    print("🤖 AI:", response_text)
+    result = agent.handle_message(session_id, text)
+    response_text = result.get("reply", "")
+    if result.get("next_question"):
+        response_text = f"{response_text}\n\nNext question: {result['next_question']}"
 
-    # TTS
-    output_audio_path = speak_to_file(response_text)
+    audio_bytes = b""
+    if get_settings()["app"].get("enable_tts"):
+        output_audio_path = speak_to_file(response_text)
+        with open(output_audio_path, "rb") as f:
+            audio_bytes = f.read()
 
-    with open(output_audio_path, "rb") as f:
-        audio_bytes = f.read()
+    return audio_bytes, response_text, text, session_id
 
-    return audio_bytes, response_text, text

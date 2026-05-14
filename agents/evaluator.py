@@ -1,10 +1,6 @@
-from crewai import Agent
+from agents.interview_agent import heuristic_evaluation
+
 
 def create_evaluator():
-    return Agent(
-        role="Answer Evaluator",
-        goal="Evaluate candidate answers",
-        backstory="Senior engineer evaluating responses",
-        llm = "ollama/qwen3:4b",
-        verbose=True
-    )
+    return heuristic_evaluation
+

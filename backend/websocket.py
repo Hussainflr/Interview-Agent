@@ -1,15 +1,15 @@
 import numpy as np
-import soundfile as sf
 from fastapi import WebSocket
 
 from backend.pipeline import process_audio_array
 
 buffer = []
+session_id = None
 
 async def interview_ws_handler(websocket: WebSocket):
     await websocket.accept()
 
-    global buffer
+    global buffer, session_id
 
     try:
         while True:
@@ -24,11 +24,11 @@ async def interview_ws_handler(websocket: WebSocket):
                 full_audio = np.concatenate(buffer)
                 buffer = []
 
-                # Send to pipeline (NO FILE CONVERSION)
-                response_audio, response_text, user_text = process_audio_array(full_audio)
+                response_audio, response_text, user_text, session_id = process_audio_array(full_audio, session_id)
 
-                await websocket.send_json({"text": response_text, "user_text": user_text})
-                await websocket.send_bytes(response_audio)
+                await websocket.send_json({"text": response_text, "user_text": user_text, "session_id": session_id})
+                if response_audio:
+                    await websocket.send_bytes(response_audio)
 
     except Exception as e:
         print("WebSocket closed:", e)

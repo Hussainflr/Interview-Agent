@@ -1,6 +1,14 @@
 llm:
+  # provider can be "ollama" or "lmstudio"
   provider: ollama
-  model: qwen3:4b   # or llama3:8b
+  model: qwen3:4b
+  base_url: http://localhost:11434
+  lmstudio_base_url: http://localhost:1234/v1
+  temperature: 0.4
+  max_tokens: 900
+  timeout_seconds: 60
+  retries: 1
+  classifier_model: qwen3:4b
 
 stt:
   engine: faster_whisper
@@ -12,8 +20,31 @@ tts:
   voice: default  # macOS will use system default voice
 
 app:
-  temperature: 0.7
-  max_tokens: 512
+  session_dir: outputs/sessions
+  report_dir: outputs/reports
+  default_role: Software Engineer
+  default_difficulty: intermediate
+  default_interview_type: technical
+  enable_tts: false
+  enable_voice: true
 
-agents:
-  verbose: true
+interview:
+  max_history_items: 12
+  roles:
+    - Software Engineer
+    - ML Engineer
+    - Data Scientist
+    - Project Manager
+    - UN/INGO role
+    - Product Manager
+    - DevOps Engineer
+  difficulties:
+    - beginner
+    - intermediate
+    - advanced
+  types:
+    - technical
+    - behavioral
+    - HR
+    - leadership
+    - scenario-based

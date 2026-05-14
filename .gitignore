@@ -19,6 +19,15 @@ models/
 # Audio files
 
 *.wav
+outputs/
+
+# Frontend build/cache
+
+frontend/.next/
+
+# Test cache
+
+.pytest_cache/
 
 # Logs / temp
 

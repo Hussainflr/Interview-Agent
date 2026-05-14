@@ -1,23 +1,23 @@
-from faster_whisper import WhisperModel
-import yaml
+from __future__ import annotations
 
-with open("configs/settings.yaml") as f:
-    config = yaml.safe_load(f)
+from functools import lru_cache
 
-MODEL_SIZE = config["stt"]["model"]
+from backend.config import get_settings
 
-# M1 optimization
-model = WhisperModel(
-    MODEL_SIZE,
-    device="cpu",
-    compute_type="int8"   # ⚡ faster on M1
-)
 
-def transcribe(audio_path):
-    segments, _ = model.transcribe(audio_path)
+@lru_cache(maxsize=1)
+def _model():
+    from faster_whisper import WhisperModel
 
-    text = ""
-    for segment in segments:
-        text += segment.text + " "
+    config = get_settings()
+    return WhisperModel(
+        config["stt"]["model"],
+        device=config["stt"].get("device", "cpu"),
+        compute_type="int8",
+    )
 
-    return text.strip()
+
+def transcribe(audio_path: str) -> str:
+    segments, _ = _model().transcribe(audio_path)
+    return " ".join(segment.text.strip() for segment in segments).strip()
+
