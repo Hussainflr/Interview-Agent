@@ -1,6 +1,6 @@
 # Local Interview Agent
 
-A local-first mock interview coach for role-specific practice, answer scoring, feedback, follow-up questions, progress tracking, and report export. It runs with local models through Ollama or LM Studio and does not require OpenAI, Claude, or any paid cloud API by default.
+A local-first mock interview coach for role-specific practice, answer scoring, feedback, follow-up questions, progress tracking, and report export. It runs offline with Ollama or LM Studio by default, and can optionally route to OpenAI, Claude, Gemini, Grok/xAI, or OpenAI-compatible endpoints when API keys and privacy policy allow it.
 
 ## What It Does
 
@@ -13,12 +13,13 @@ A local-first mock interview coach for role-specific practice, answer scoring, f
 - Exports interview reports as Markdown or PDF in `outputs/reports`.
 - Accepts pasted CV/resume text and job descriptions. Text file upload is supported as a convenience.
 - Provides text input as the primary flow, with optional microphone input.
+- Supports a provider abstraction layer and MCP-ready tool registry.
 
 ## Architecture
 
 ```text
-frontend/app/page.js
-  UI, provider/model controls, dashboard, text answers, optional mic
+frontend/
+  Vendored LobeChat source UI integrated with the Interview Agent backend
 
 backend/main.py
   FastAPI routes, uploads, report export, model health checks
@@ -26,8 +27,11 @@ backend/main.py
 agents/interview_agent.py
   intent routing, guardrails, orchestration, scoring, follow-up generation
 
-llm/local_client.py
-  Ollama and LM Studio clients, retries, timeouts, JSON output handling
+providers/
+  Provider interface, Ollama, LM Studio, OpenAI-compatible, OpenAI, Claude, Gemini, xAI, routing
+
+mcp/
+  MCP server registry, stdio client scaffold, tool whitelist, context filtering, audit logging
 
 prompts/
   reusable question and evaluation prompt templates
@@ -44,7 +48,8 @@ speech/
 ### 1. Install prerequisites
 
 - Python 3.10 or newer
-- Node.js 18 or newer
+- Node.js 20 or newer
+- pnpm, or Corepack enabled
 - One local model server:
   - Ollama: <https://ollama.com>
   - LM Studio: <https://lmstudio.ai>
@@ -61,8 +66,7 @@ Or manually:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cd frontend
-npm install
+pnpm --dir frontend install
 ```
 
 ### 3. Configure local models
@@ -100,11 +104,16 @@ uvicorn backend.main:app --reload
 In another terminal:
 
 ```bash
-cd frontend
-npm run dev
+./run.sh
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3010`.
+
+For Docker production-style mode:
+
+```bash
+docker compose up --build
+```
 
 ### 5. Run with LM Studio
 
@@ -128,17 +137,71 @@ http://localhost:1234/v1
 
 For low-memory machines, start with 4B to 8B quantized models.
 
+## Hybrid Providers
+
+Cloud providers are optional and disabled unless configured through environment variables. See:
+
+- `docs/PROVIDERS.md`
+- `docs/ARCHITECTURE.md`
+
+Supported provider IDs:
+
+- `ollama`
+- `lmstudio`
+- `openai_compatible`
+- `openai`
+- `anthropic`
+- `gemini`
+- `xai`
+
+Privacy modes:
+
+- `local_only`: only local models.
+- `hybrid`: local first, cloud fallback when allowed.
+- `cloud_allowed`: configured cloud provider can be used.
+
+## MCP
+
+MCP support is secure-by-default. Servers are disabled until configured, tools must be whitelisted, tool descriptions are hidden from the model unless explicitly enabled, and calls are audited.
+
+See `docs/MCP_SETUP.md`.
+
+## Primary LobeChat UI
+
+The project now uses LobeChat as the primary frontend by exposing the Interview Agent backend as an OpenAI-compatible provider.
+
+```bash
+./run.sh
+```
+
+Open:
+
+```text
+http://localhost:3010
+```
+
+See `docs/LOBECHAT_INTEGRATION.md`.
+
+Example registry:
+
+```bash
+configs/mcp_servers.yaml
+```
+
+Example local server:
+
+```bash
+tools/example_mcp_server.py
+```
+
 ## Usage
 
-1. Start the backend and frontend.
-2. Select provider and model.
-3. Click `Check model`.
-4. Choose role, difficulty, and interview type.
-5. Paste CV highlights or a job description if available.
-6. Click `Start new interview`.
-7. Type an answer and click `Send answer`.
-8. Review score, rubric, feedback, and the next question.
-9. Export Markdown or PDF report when done.
+1. Start the platform with `./run.sh`.
+2. Open LobeChat at `http://localhost:3010`.
+3. Select `Interview Coach` as the model.
+4. Start a technical, behavioral, HR, leadership, system design, ML/AI, or UN/INGO mock interview in chat.
+5. Paste CV highlights or a job description when you want personalized coaching.
+6. Answer naturally and review the score, rubric, stronger answer, and follow-up question.
 
 ## Troubleshooting
 
@@ -155,6 +218,14 @@ For low-memory machines, start with 4B to 8B quantized models.
 source .venv/bin/activate
 pytest
 ```
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+When using Ollama from Docker, point `OLLAMA_BASE_URL` to your host, for example `http://host.docker.internal:11434`.
 
 ## Future Improvements
 

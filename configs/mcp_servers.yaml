@@ -1,0 +1,13 @@
+servers:
+  # Example only. Keep disabled until you trust the server and commands.
+  # - id: local_tools
+  #   name: Local Safe Tools
+  #   enabled: false
+  #   transport: stdio
+  #   command: python
+  #   args:
+  #     - tools/example_mcp_server.py
+  #   allowed_tools:
+  #     - echo
+  #     - session_summary
+  #   allow_file_access: false

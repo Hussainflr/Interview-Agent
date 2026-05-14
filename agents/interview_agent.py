@@ -7,7 +7,8 @@ from typing import Any
 
 from backend.config import ROOT_DIR, get_settings
 from backend.storage import SessionStore
-from llm.local_client import LocalLLMClient, LocalModelError
+from providers.base import ProviderError
+from providers.router import ModelRouter
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ QUESTION_FALLBACKS = {
 class InterviewAgent:
     def __init__(self, settings: dict[str, Any] | None = None):
         self.settings = settings or get_settings()
-        self.client = LocalLLMClient(self.settings)
+        self.router = ModelRouter(self.settings)
         self.store = SessionStore(self.settings["app"]["session_dir"])
 
     def start_session(self, profile: dict[str, Any]) -> dict[str, Any]:
@@ -87,7 +88,7 @@ class InterviewAgent:
         return path
 
     def health(self) -> dict[str, Any]:
-        return self.client.health().__dict__
+        return self.router.health().__dict__
 
     def _normalize_profile(self, profile: dict[str, Any]) -> dict[str, Any]:
         app = self.settings["app"]
@@ -97,6 +98,7 @@ class InterviewAgent:
             "interview_type": profile.get("interview_type") or app.get("default_interview_type", "technical"),
             "provider": self.settings["llm"]["provider"],
             "model": self.settings["llm"]["model"],
+            "privacy_mode": self.settings.get("routing", {}).get("privacy_mode", "local_only"),
             "cv_text": _truncate(profile.get("cv_text", ""), 3500),
             "job_description": _truncate(profile.get("job_description", ""), 3500),
         }
@@ -116,9 +118,10 @@ Recent session:
 {_recent_messages(session)}
 """.strip()
         try:
-            question = self.client.generate(system, user)
+            sensitive = bool(profile.get("cv_text") or profile.get("job_description"))
+            question = self.router.generate(system, user, task="interviewer", sensitive=sensitive)
             return question or fallback
-        except LocalModelError as exc:
+        except ProviderError as exc:
             logger.warning("Question generation fallback: %s", exc)
             return f"{fallback} (Local model note: {exc})"
 
@@ -136,7 +139,8 @@ Current answer: {answer}
 Recent session:
 {_recent_messages(session)}
 """.strip()
-        evaluation = self.client.generate_json(system, user, fallback)
+        sensitive = bool(profile.get("cv_text") or profile.get("job_description"))
+        evaluation = self.router.generate_json(system, user, fallback, task="evaluator", sensitive=sensitive)
         return _clean_evaluation(evaluation, fallback)
 
     def _append(
@@ -290,4 +294,3 @@ def _merge_areas(existing: list[str], new_items: list[str]) -> list[str]:
         if normalized and normalized not in merged:
             merged.append(normalized)
     return merged[:8]
-

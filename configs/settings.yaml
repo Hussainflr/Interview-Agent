@@ -1,14 +1,78 @@
 llm:
-  # provider can be "ollama" or "lmstudio"
+  # Default stays local/offline. Cloud providers are opt-in via env keys.
   provider: ollama
   model: qwen3:4b
-  base_url: http://localhost:11434
-  lmstudio_base_url: http://localhost:1234/v1
   temperature: 0.4
   max_tokens: 900
   timeout_seconds: 60
   retries: 1
-  classifier_model: qwen3:4b
+  fallback_chain:
+    - ollama
+    - lmstudio
+
+providers:
+  ollama:
+    enabled: true
+    local: true
+    base_url: http://localhost:11434
+    default_model: qwen3:4b
+    classifier_model: qwen3:4b
+    cost_per_1k_input: 0
+    cost_per_1k_output: 0
+  lmstudio:
+    enabled: true
+    local: true
+    base_url: http://localhost:1234/v1
+    default_model: local-model
+    classifier_model: local-model
+    cost_per_1k_input: 0
+    cost_per_1k_output: 0
+  openai_compatible:
+    enabled: false
+    local: false
+    base_url: http://localhost:8001/v1
+    api_key_env: OPENAI_COMPATIBLE_API_KEY
+    default_model: local-model
+  openai:
+    enabled: false
+    local: false
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    default_model: gpt-4.1-mini
+    cost_per_1k_input: 0.0004
+    cost_per_1k_output: 0.0016
+  anthropic:
+    enabled: false
+    local: false
+    base_url: https://api.anthropic.com/v1
+    api_key_env: ANTHROPIC_API_KEY
+    default_model: claude-3-5-haiku-latest
+    cost_per_1k_input: 0.0008
+    cost_per_1k_output: 0.004
+  gemini:
+    enabled: false
+    local: false
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    api_key_env: GEMINI_API_KEY
+    default_model: gemini-1.5-flash
+    cost_per_1k_input: 0.000075
+    cost_per_1k_output: 0.0003
+  xai:
+    enabled: false
+    local: false
+    base_url: https://api.x.ai/v1
+    api_key_env: XAI_API_KEY
+    default_model: grok-2-latest
+    cost_per_1k_input: 0.002
+    cost_per_1k_output: 0.01
+
+routing:
+  privacy_mode: local_only  # local_only, hybrid, cloud_allowed
+  classifier_provider: ollama
+  evaluator_provider: auto
+  interviewer_provider: auto
+  allow_cloud_for_sensitive_context: false
+  max_cloud_cost_usd_per_session: 0.25
 
 stt:
   engine: faster_whisper
@@ -48,3 +112,26 @@ interview:
     - HR
     - leadership
     - scenario-based
+
+mcp:
+  enabled: true
+  registry_path: configs/mcp_servers.yaml
+  audit_log: outputs/audit/mcp_audit.jsonl
+  default_policy: deny
+  allowed_transports:
+    - stdio
+  max_tool_response_chars: 4000
+  require_user_approval: true
+  expose_tool_descriptions_to_model: false
+  servers: []
+
+security:
+  allowed_file_roots:
+    - outputs
+    - prompts
+  blocked_secret_patterns:
+    - API_KEY
+    - SECRET
+    - TOKEN
+    - PRIVATE KEY
+  rate_limit_per_minute: 30

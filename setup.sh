@@ -14,19 +14,65 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
 if ! command -v node >/dev/null 2>&1; then
-  echo "Node.js is required for the frontend. Install Node 18 or newer, then run: cd frontend && npm install"
+  echo "Node.js is required for the LobeChat frontend. Install Node 20 or newer."
 else
-  cd frontend
-  npm install
-  cd ..
+  if ! command -v pnpm >/dev/null 2>&1; then
+    if command -v corepack >/dev/null 2>&1; then
+      corepack enable
+    else
+      echo "pnpm is required for LobeChat. Install it with: npm install -g pnpm"
+      exit 1
+    fi
+  fi
+  pnpm --dir frontend install
 fi
 
-mkdir -p outputs/sessions outputs/reports models
+mkdir -p outputs/sessions outputs/reports outputs/audit models
 
 if [ ! -f .env ]; then
   cp .env.example .env
   echo "Created .env from .env.example"
 fi
+
+generate_secret() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -base64 32
+  else
+    python - <<'PY'
+import base64
+import os
+print(base64.b64encode(os.urandom(32)).decode())
+PY
+  fi
+}
+
+ensure_env_secret() {
+  local name="$1"
+  local current=""
+  current="$(grep -E "^${name}=" .env | tail -n 1 | cut -d= -f2- || true)"
+  if [ -z "$current" ]; then
+    echo "${name}=$(generate_secret)" >> .env
+    echo "Generated ${name} in .env"
+  fi
+}
+
+ensure_env_secret "KEY_VAULTS_SECRET"
+ensure_env_secret "AUTH_SECRET"
+
+ensure_env_value() {
+  local name="$1"
+  local value="$2"
+  local current=""
+  current="$(grep -E "^${name}=" .env | tail -n 1 | cut -d= -f2- || true)"
+  if [ -z "$current" ]; then
+    echo "${name}=${value}" >> .env
+    echo "Set ${name} in .env"
+  fi
+}
+
+ensure_env_value "LOBE_DB_NAME" "lobechat"
+ensure_env_value "LOBE_POSTGRES_PORT" "54322"
+ensure_env_value "POSTGRES_PASSWORD" "interview-local-postgres"
 
 if command -v ollama >/dev/null 2>&1; then
   echo "Ollama found. Recommended starter model:"
@@ -37,5 +83,4 @@ fi
 
 echo ""
 echo "Setup complete."
-echo "Run backend:  source .venv/bin/activate && uvicorn backend.main:app --reload"
-echo "Run frontend: cd frontend && npm run dev"
+echo "Run the full app: ./run.sh"

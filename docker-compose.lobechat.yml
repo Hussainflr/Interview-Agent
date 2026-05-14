@@ -1,0 +1,63 @@
+services:
+  lobechat-postgres:
+    image: paradedb/paradedb:latest-pg17
+    container_name: interview-agent-lobechat-postgres
+    restart: unless-stopped
+    ports:
+      - "${LOBE_POSTGRES_PORT:-54322}:5432"
+    environment:
+      POSTGRES_DB: ${LOBE_DB_NAME:-lobechat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-interview-local-postgres}
+    volumes:
+      - ./outputs/lobechat-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  interview-backend:
+    build: .
+    container_name: interview-agent-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      LOCAL_LLM_PROVIDER: ${LOCAL_LLM_PROVIDER:-ollama}
+      LOCAL_LLM_MODEL: ${LOCAL_LLM_MODEL:-qwen3:4b}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      LMSTUDIO_BASE_URL: ${LMSTUDIO_BASE_URL:-http://host.docker.internal:1234/v1}
+      PRIVACY_MODE: ${PRIVACY_MODE:-local_only}
+    volumes:
+      - ./outputs:/app/outputs
+      - ./configs:/app/configs
+      - ./prompts:/app/prompts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  lobechat-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: interview-agent-lobechat
+    restart: unless-stopped
+    ports:
+      - "3210:3210"
+    environment:
+      ENABLED_OPENAI: "1"
+      OPENAI_API_KEY: ${LOBE_OPENAI_API_KEY:-interview-local-key}
+      OPENAI_PROXY_URL: http://interview-backend:8000/v1
+      OPENAI_MODEL_LIST: -all,+interview-agent-local=Interview Coach,+interview-agent-hybrid=Interview Coach Hybrid
+      KEY_VAULTS_SECRET: ${KEY_VAULTS_SECRET:-jgwsK28dspyVQoIf8/M3IIHl1h6LYYceSYNXeLpy6uk=}
+      AUTH_SECRET: ${AUTH_SECRET:-b1+FYdrOSe22RYp1LkDnLHXS2Cb3r7gyJ9S7mZFBJoE=}
+      DATABASE_DRIVER: node
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-interview-local-postgres}@lobechat-postgres:5432/${LOBE_DB_NAME:-lobechat}
+      ENABLED_OLLAMA: "1"
+      OLLAMA_PROXY_URL: ${LOBE_OLLAMA_PROXY_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL_LIST: ${LOBE_OLLAMA_MODEL_LIST:--all,+qwen3:4b,+llama3.1:8b,+mistral:7b}
+    depends_on:
+      - interview-backend
+      - lobechat-postgres
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
