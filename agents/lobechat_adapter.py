@@ -74,6 +74,46 @@ Candidate answer:
 {evaluation.get("follow_up_question", "Can you share a more specific example with measurable impact?")}"""
 
 
+def stream_to_lobechat(messages: list[dict[str, str]], model: str = INTERVIEW_MODEL_ID):
+    user_text = _latest_user_message(messages)
+    route = classify_intent(user_text)
+    if route["intent"] != "interview_answer":
+        yield from _word_chunks(route["response"])
+        return
+
+    settings = get_settings()
+    router = ModelRouter(settings)
+    sensitive = _looks_sensitive(messages)
+    mode = _infer_mode(messages)
+    system = """
+You are embedded inside LobeChat as a real-time AI interview coach.
+
+Stream concise Markdown feedback as you think. Do not return JSON.
+Give:
+1. a score out of 100,
+2. strengths,
+3. improvement areas,
+4. a rubric with relevance, clarity, depth, structure, and role fit,
+5. a stronger sample answer,
+6. one adaptive follow-up question.
+
+Be direct, practical, and friendly.
+""".strip()
+    prompt = f"""
+Interview mode: {mode}
+Conversation context:
+{_compact_history(messages)}
+
+Candidate answer:
+{user_text}
+""".strip()
+
+    try:
+        yield from router.stream(system, prompt, task="evaluator", sensitive=sensitive)
+    except Exception:
+        yield from _word_chunks(respond_to_lobechat(messages, model))
+
+
 def _latest_user_message(messages: list[dict[str, str]]) -> str:
     for message in reversed(messages):
         if message.get("role") == "user":
@@ -98,3 +138,9 @@ def _infer_mode(messages: list[dict[str, str]]) -> str:
         if mode in text:
             return mode
     return "adaptive interview coaching"
+
+
+def _word_chunks(text: str, size: int = 12):
+    words = text.split(" ")
+    for index in range(0, len(words), size):
+        yield " ".join(words[index : index + size]) + " "

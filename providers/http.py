@@ -155,6 +155,39 @@ class OpenAICompatibleProvider(BaseHTTPProvider):
             raw=raw,
         )
 
+    def stream(self, request: ChatRequest) -> Iterable[str]:
+        model = request.model or self.default_model
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": [message.__dict__ for message in request.messages],
+            "temperature": request.temperature,
+            "max_tokens": request.max_tokens,
+            "stream": True,
+        }
+        if request.tools:
+            payload["tools"] = request.tools
+        response = requests.post(
+            f"{self.base_url}/chat/completions",
+            json=payload,
+            headers=self.headers(),
+            timeout=self.timeout,
+            stream=True,
+        )
+        response.raise_for_status()
+        for line in response.iter_lines():
+            if not line:
+                continue
+            decoded = line.decode("utf-8")
+            if decoded.startswith("data:"):
+                decoded = decoded.removeprefix("data:").strip()
+            if decoded == "[DONE]":
+                break
+            chunk = json.loads(decoded)
+            delta = chunk.get("choices", [{}])[0].get("delta", {})
+            token = delta.get("content", "")
+            if token:
+                yield token
+
     def model_list(self) -> list[str]:
         response = requests.get(f"{self.base_url}/models", headers=self.headers(), timeout=5)
         response.raise_for_status()

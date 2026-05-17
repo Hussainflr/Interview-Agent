@@ -90,6 +90,43 @@ class ModelRouter:
 
         raise ProviderError(str(last_error) if last_error else "No allowed provider could handle the request.")
 
+    def stream(
+        self,
+        system: str,
+        user: str,
+        *,
+        task: str = "interviewer",
+        provider: str | None = None,
+        model: str | None = None,
+        sensitive: bool = False,
+        tools: list[dict[str, Any]] | None = None,
+    ):
+        messages = [ChatMessage("system", system), ChatMessage("user", user)]
+        last_error: Exception | None = None
+
+        for provider_name in self._route(task, provider, sensitive=sensitive):
+            try:
+                if not self._provider_allowed(provider_name, sensitive=sensitive):
+                    continue
+                adapter = build_provider(provider_name, self.settings)
+                request = ChatRequest(
+                    messages=messages,
+                    model=model or self._model_for(provider_name, task),
+                    temperature=float(self.llm.get("temperature", 0.4)),
+                    max_tokens=int(self.llm.get("max_tokens", 900)),
+                    json_mode=False,
+                    tools=tools or [],
+                    metadata={"task": task, "sensitive": sensitive},
+                )
+                yield from adapter.stream(request)
+                return
+            except Exception as exc:
+                last_error = exc
+                logger.warning("Streaming provider %s failed for task %s: %s", provider_name, task, exc)
+                time.sleep(0.2)
+
+        raise ProviderError(str(last_error) if last_error else "No allowed provider could stream the request.")
+
     def generate(
         self,
         system: str,
